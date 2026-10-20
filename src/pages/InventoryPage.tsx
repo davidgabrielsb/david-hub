@@ -3,8 +3,12 @@ import { useState } from "react";
 import { useInventoryStore } from "../stores/useInventoryStore";
 import { ConfirmButton } from "../components/ConfirmButton";
 import { PageSearch } from "../components/PageSearch";
+import { EntityEditor } from "../components/EntityEditor";
+import { useListOrganization, ListOrderToolbar, ListOrderHandle } from "../components/ListOrganization";
+import type { InventoryItem } from "../features/inventory/types";
 
 export function InventoryPage() {
+  const [editing, setEditing] = useState<InventoryItem | null>(null);
   const inventory = useInventoryStore(
     (state) => state.inventory,
   );
@@ -99,6 +103,7 @@ export function InventoryPage() {
     return matchesName && matchesBrand && matchesMinimum && matchesMaximum;
   });
 
+  const organized = useListOrganization("inventory:items", filteredInventory, (item) => item.product);
   return (
     <section>
       <header className="page-header">
@@ -195,6 +200,7 @@ export function InventoryPage() {
         </div>
       </form>
 
+      <ListOrderToolbar list={organized} label="estoque" />
       <div className="inventory-table-wrapper">
         <table className="inventory-table">
           <thead>
@@ -209,9 +215,10 @@ export function InventoryPage() {
           </thead>
 
           <tbody>
-            {filteredInventory.map((item) => (
-              <tr key={item.id}>
+            {organized.items.map((item) => (
+              <tr key={item.id} {...organized.dropProps(item.id)}>
                 <td>
+                  <ListOrderHandle list={organized} id={item.id} label={item.product} />
                   {item.product}
                 </td>
 
@@ -336,13 +343,7 @@ export function InventoryPage() {
 
                 <td>
                   <ConfirmButton className="inventory-delete" ariaLabel={`Excluir ${item.product} do estoque`} onConfirm={() => removeItem(item.id)} />
-                  <button type="button" className="inventory-delete" onClick={() => {
-                    const nextProduct = window.prompt("Nome do produto", item.product);
-                    if (!nextProduct?.trim()) return;
-                    const nextBrand = window.prompt("Marca", item.brand);
-                    if (!nextBrand?.trim()) return;
-                    updateItem(item.id, { product: nextProduct.trim(), brand: nextBrand.trim() });
-                  }}>Editar</button>
+                  <button type="button" className="inventory-delete" onClick={() => setEditing(item)}>Editar</button>
                 </td>
               </tr>
             ))}
@@ -360,6 +361,7 @@ export function InventoryPage() {
           </tbody>
         </table>
       </div>
+      {editing && <EntityEditor key={editing.id} title="Editar produto" initial={{ ...editing }} fields={[{ name: "product", label: "Produto", required: true }, { name: "brand", label: "Marca", required: true }, { name: "quantity", label: "Quantidade", type: "number", min: 0, step: "1", required: true }, { name: "minimumStock", label: "Estoque mínimo", type: "number", min: 0, step: "1" }, { name: "idealStock", label: "Estoque ideal", type: "number", min: 0, step: "1" }, { name: "unit", label: "Unidade" }, { name: "location", label: "Localização" }, { name: "supplier", label: "Fornecedor" }]} onSave={(values) => { updateItem(editing.id, { product: values.product, brand: values.brand, quantity: Number(values.quantity), minimumStock: values.minimumStock === "" ? undefined : Number(values.minimumStock), idealStock: values.idealStock === "" ? undefined : Number(values.idealStock), unit: values.unit || undefined, location: values.location || undefined, supplier: values.supplier || undefined }); setEditingQuantities((current) => { const next = { ...current }; delete next[editing.id]; return next; }); setEditingMinimums((current) => { const next = { ...current }; delete next[editing.id]; return next; }); }} onClose={() => setEditing(null)} />}
     </section>
   );
 }

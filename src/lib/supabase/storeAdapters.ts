@@ -8,6 +8,8 @@ import { useHabitStore } from "../../stores/useHabitStore";
 import { useRoutineStore } from "../../stores/useRoutineStore";
 import { useEventStore } from "../../stores/useEventStore";
 import { useInboxStore } from "../../stores/useInboxStore";
+import { useListOrganizationStore } from "../../stores/useListOrganizationStore";
+import type { ListPreference } from "../../utils/listOrganization";
 
 export interface StoreAdapter {
   module: WorkspaceModule;
@@ -23,9 +25,24 @@ function adapter(
 ): StoreAdapter {
   return {
     module,
-    read: () => Object.fromEntries(keys.map((key) => [key, store.getState()[key]])),
-    apply: (payload) => store.setState(Object.fromEntries(keys.filter((key) => key in payload).map((key) => [key, payload[key]]))),
-    subscribe: (listener) => store.subscribe(listener),
+    read: () => ({ ...Object.fromEntries(keys.map((key) => [key, store.getState()[key]])),
+      _organization: Object.fromEntries(Object.entries(useListOrganizationStore.getState().lists).filter(([key]) => key.split(":")[0] === module)),
+    }),
+    apply: (payload) => {
+      store.setState(Object.fromEntries(keys.filter((key) => key in payload).map((key) => [key, payload[key]])));
+      if (payload._organization && typeof payload._organization === "object") {
+        const incoming = Object.entries(payload._organization).filter(([key, value]) => key.split(":")[0] === module && value && ["default", "manual", "az", "za"].includes(value.mode) && Array.isArray(value.ids) && value.ids.every((id: unknown) => typeof id === "string"));
+        useListOrganizationStore.setState((state) => ({ lists: { ...state.lists, ...Object.fromEntries(incoming) as Record<string, ListPreference> } }));
+      }
+    },
+    subscribe: (listener) => {
+      const stopData = store.subscribe(listener);
+      const stopOrder = useListOrganizationStore.subscribe((state, previous) => {
+        const belongs = (key: string) => key.split(":")[0] === module;
+        if (Object.keys(state.lists).some((key) => belongs(key) && state.lists[key] !== previous.lists[key])) listener();
+      });
+      return () => { stopData(); stopOrder(); };
+    },
   };
 }
 

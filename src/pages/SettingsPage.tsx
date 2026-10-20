@@ -2,7 +2,7 @@ import { AppUpdates } from "../components/cloud/AppUpdates";
 import { useThemeStore } from "../stores/useThemeStore";
 import { useEffect, useRef, useState } from "react";
 import { isCloudConfigured, supabase } from "../lib/supabase/client";
-const storageKeys = ["david-hub-tasks", "david-hub-inventory", "david-hub-records", "david-hub-events", "david-hub-inbox", "david-hub-habits", "david-hub-bills", "david-hub-routines", "david-hub-sites"];
+const storageKeys = ["david-hub-tasks", "david-hub-inventory", "david-hub-records", "david-hub-events", "david-hub-inbox", "david-hub-habits", "david-hub-bills", "david-hub-routines", "david-hub-sites", "david-hub-organization", "david-hub-theme"];
 export function SettingsPage() {
   const { theme, setTheme } = useThemeStore();
   const inputRef = useRef<HTMLInputElement>(null); const [message, setMessage] = useState(""); const [userEmail, setUserEmail] = useState("");

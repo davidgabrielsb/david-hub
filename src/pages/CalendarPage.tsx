@@ -4,6 +4,8 @@ import { CalendarGrid } from "../components/calendar/CalendarGrid";
 import { ConfirmButton } from "../components/ConfirmButton";
 import { useEventStore, type CalendarEvent } from "../stores/useEventStore";
 import { PageSearch } from "../components/PageSearch";
+import { EntityEditor } from "../components/EntityEditor";
+import { OrganizedList } from "../components/ListOrganization";
 
 const monthFormatter = new Intl.DateTimeFormat(
   "pt-BR",
@@ -14,6 +16,7 @@ const monthFormatter = new Intl.DateTimeFormat(
 );
 
 export function CalendarPage() {
+  const [editing, setEditing] = useState<CalendarEvent | null>(null);
   const events = useEventStore((state) => state.events);
   const addEvent = useEventStore((state) => state.addEvent);
   const removeEvent = useEventStore((state) => state.removeEvent);
@@ -120,14 +123,15 @@ export function CalendarPage() {
           <button type="submit">Adicionar data</button>
         </form>
         {visibleEvents.length === 0 ? <p>{events.length ? "Nenhuma data encontrada." : "Nenhuma data cadastrada."}</p> : (
-          <ul>{[...visibleEvents].sort((a, b) => a.date.localeCompare(b.date)).map((event) => (
-            <li key={event.id}>{event.date.split("-").reverse().join("/")} • {event.title}
-              <button type="button" onClick={() => { const next = window.prompt("Título", event.title); if (!next?.trim()) return; const nextDate = window.prompt("Data no formato AAAA-MM-DD", event.date); if (!nextDate) return; updateEvent(event.id, { title: next.trim(), date: nextDate }); }}>Editar</button>
+          <OrganizedList collection="events:items" items={[...visibleEvents].sort((a, b) => a.date.localeCompare(b.date))} label={(event) => event.title} name="datas" className="simple-list">{(event) => (
+            <article>{event.date.split("-").reverse().join("/")} {event.time} • {event.title}
+              <button type="button" onClick={() => setEditing(event)}>Editar</button>
               <ConfirmButton ariaLabel={`Excluir ${event.title}`} onConfirm={() => removeEvent(event.id)} />
-            </li>
-          ))}</ul>
+            </article>
+          )}</OrganizedList>
         )}
       </div>
+      {editing && <EntityEditor key={editing.id} title="Editar compromisso" initial={{ title: editing.title, date: editing.date, time: editing.time, area: editing.area }} fields={[{ name: "title", label: "Título", required: true }, { name: "date", label: "Data", type: "date", required: true }, { name: "time", label: "Hora", type: "time" }, { name: "area", label: "Área", type: "select", options: [{ value: "work", label: "Trabalho" }, { value: "study", label: "Estudos" }, { value: "personal", label: "Pessoal" }] }]} onSave={(values) => updateEvent(editing.id, { title: values.title, date: values.date, time: values.time || undefined, area: values.area as CalendarEvent["area"] })} onClose={() => setEditing(null)} />}
     </section>
   );
 }

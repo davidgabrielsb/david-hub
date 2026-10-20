@@ -1,5 +1,13 @@
 # Atualizações do David Hub para Windows
 
+## Edição e organização das listas
+
+- Formulários de edição com Salvar e Cancelar em projetos, anotações da caixa de entrada, hábitos, compromissos, produtos, rotinas, etapas, contas, movimentações e conteúdo dos sites. As tarefas dos projetos e do painel inicial também abrem o editor completo.
+- Cada lista oferece ordem padrão, A–Z, Z–A e Minha ordem. Arraste o botão ⠿ ou use as setas; Alt + ↑/↓ também move o item. Arrastar muda automaticamente para Minha ordem.
+- A organização fica salva, acompanha o backup e é sincronizada junto dos dados do módulo quando a nuvem está conectada. Cada lista tem sua própria ordem; os filtros não excluem itens dos dados.
+- O calendário continua respeitando as datas; a organização personalizada se aplica à lista de compromissos abaixo dele.
+- Configurações → Atualizações do Hub instala a versão Windows. Para Mac Apple Silicon, baixe `David-Hub-macOS-arm64.zip` na mesma versão do GitHub Releases e substitua o aplicativo em Aplicativos.
+
 ## O que está preparado
 
 A pasta está conectada ao repositório público `davidgabrielsb/david-hub` no GitHub. O fluxo `.github/workflows/publish-windows.yml` publica uma versão Windows quando mudanças do aplicativo chegam à branch `main`, ou quando executado manualmente em Actions. Salvar um arquivo no Mac não publica nada: a mudança precisa ser enviada ao GitHub.

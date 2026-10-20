@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { OrganizedList } from "../components/ListOrganization";
 import { TaskEditor } from "../components/TaskEditor";
 
 import { DateField } from "../components/forms/DateField";
@@ -406,7 +407,7 @@ const filteredTasks = tasks
           </div>
         )}
 
-        {filteredTasks.map((task) => (
+        <OrganizedList collection="tasks:items" items={filteredTasks} label={(task) => task.title} name="tarefas" className="task-list">{(task) => (
           <article
             key={task.id}
             data-priority={task.priority}
@@ -489,7 +490,7 @@ const filteredTasks = tasks
 
             <div className="task-card-actions"><button type="button" className="task-delete" onClick={() => setEditingTask(task)}>Editar</button><ConfirmButton className="task-delete" ariaLabel={`Excluir a tarefa ${task.title}`} onConfirm={() => removeTask(task.id)} /></div>
           </article>
-        ))}
+        )}</OrganizedList>
       </div>
     </section>
   );

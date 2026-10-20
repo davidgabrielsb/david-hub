@@ -16,9 +16,11 @@ interface FinanceStore {
   toggleEntryMonth: (id: string, month: string) => void;
   addAccount: (account: InvestmentAccount) => void; updateAccount: (id: string, balance: number) => void; removeAccount: (id: string) => void;
   addCard: (card: CreditCard) => void; removeCard: (id: string) => void;
+  editAccount: (id: string, values: Partial<Omit<InvestmentAccount, "id">>) => void;
 }
 export const useFinanceStore = create<FinanceStore>()(persist((set) => ({
   bills: [],
+  editAccount: (id, values) => set((state) => ({ accounts: (state.accounts ?? []).map((account) => account.id === id ? { ...account, ...values } : account) })),
   entries: [],
   accounts: [
     { id: "checking-main", name: "Conta principal", kind: "Conta corrente", balance: 0, role: "available" },

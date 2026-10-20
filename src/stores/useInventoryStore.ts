@@ -16,7 +16,7 @@ interface InventoryStore {
   ) => void;
 
   updateMinimumStock: (id: string, minimumStock: number) => void;
-  updateItem: (id: string, values: Partial<Pick<InventoryItem, "product" | "brand">>) => void;
+  updateItem: (id: string, values: Partial<Omit<InventoryItem, "id">>) => void;
 
   increaseQuantity: (id: string) => void;
 

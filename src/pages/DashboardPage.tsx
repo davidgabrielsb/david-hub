@@ -1,5 +1,7 @@
-import { Children } from "react";
-import { useTaskStore } from "../stores/useTaskStore";
+import { Children, isValidElement, useState } from "react";
+import { useTaskStore, type Task } from "../stores/useTaskStore";
+import { OrganizedList } from "../components/ListOrganization";
+import { TaskEditor } from "../components/TaskEditor";
 import { useInventoryStore } from "../stores/useInventoryStore";
 import { useRecordStore } from "../stores/useRecordStore";
 import { getProjectProgress } from "../features/projects/progress";
@@ -123,6 +125,7 @@ export function DashboardPage() {
           {myDayTasks.map((task) => (
             <TaskRow
               key={task.id}
+              task={task}
               title={task.title}
               meta={getAreaLabel(task.area)}
               onComplete={() => toggleTask(task.id)}
@@ -138,6 +141,7 @@ export function DashboardPage() {
           {priorityTasks.map((task) => (
             <TaskRow
               key={task.id}
+              task={task}
               title={task.title}
               meta={`${getPriorityLabel(
                 task.priority,
@@ -169,6 +173,7 @@ export function DashboardPage() {
           {overdueTasks.map((task) => (
             <TaskRow
               key={task.id}
+              task={task}
               title={task.title}
               meta={
                 task.deadline
@@ -188,6 +193,7 @@ export function DashboardPage() {
           {upcomingTasks.map((task) => (
             <TaskRow
               key={task.id}
+              task={task}
               title={task.title}
               meta={
                 task.deadline
@@ -250,15 +256,15 @@ function DashboardCard({
   emptyText,
   children,
 }: DashboardCardProps) {
-  const hasChildren = Children.count(children) > 0;
+  const rows = Children.toArray(children).flatMap((child) => isValidElement<TaskRowProps>(child) ? [{ id: String(child.key), title: child.props.title, node: child }] : []);
 
   return (
     <div className="dashboard-card">
       <h3>{title}</h3>
 
       <div className="dashboard-card-content">
-        {hasChildren
-          ? children
+        {rows.length > 0
+          ? <OrganizedList collection={`tasks:dashboard:${title.split(" •")[0]}`} items={rows} label={(row) => row.title} className="dashboard-card-content">{(row) => row.node}</OrganizedList>
           : (
             <p className="dashboard-empty">
               {emptyText}
@@ -270,6 +276,7 @@ function DashboardCard({
 }
 
 interface TaskRowProps {
+  task?: Task;
   title: string;
   meta: string;
   onComplete?: () => void;
@@ -277,11 +284,13 @@ interface TaskRowProps {
 }
 
 function TaskRow({
+  task,
   title,
   meta,
   onComplete,
   onRemove,
 }: TaskRowProps) {
+  const [editing, setEditing] = useState(false);
   return (
     <div className="dashboard-task-row">
       <div>
@@ -292,6 +301,8 @@ function TaskRow({
         </span>
       </div>
       {(onComplete || onRemove) && <div className="dashboard-row-actions">{onComplete && <button onClick={onComplete}>Concluir</button>}{onRemove && <button onClick={onRemove}>Remover</button>}</div>}
+      {task && <div className="dashboard-row-actions"><button type="button" onClick={() => setEditing(true)}>Editar</button></div>}
+      {editing && task && <TaskEditor task={task} onClose={() => setEditing(false)} />}
     </div>
   );
 }

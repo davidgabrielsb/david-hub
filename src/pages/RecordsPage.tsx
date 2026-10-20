@@ -2,7 +2,10 @@ import { Link } from "react-router-dom";
 import { useSiteStore } from "../stores/useSiteStore";
 import { useState } from "react";
 import { useRecordStore, type HubRecord, type RecordArea } from "../stores/useRecordStore";
-import { useTaskStore, type TaskPriority } from "../stores/useTaskStore";
+import { useTaskStore, type TaskPriority, type Task } from "../stores/useTaskStore";
+import { EntityEditor } from "../components/EntityEditor";
+import { TaskEditor } from "../components/TaskEditor";
+import { OrganizedList } from "../components/ListOrganization";
 import { getProjectProgress } from "../features/projects/progress";
 import { ConfirmButton } from "../components/ConfirmButton";
 import { PageSearch } from "../components/PageSearch";
@@ -61,9 +64,10 @@ export function RecordsPage({ area }: { area: RecordArea }) {
       <button type="button" className={!showCompleted ? "active" : ""} onClick={() => setShowCompleted(false)}>Pendentes ({records.filter((record) => !getProjectProgress(record, tasks).isComplete).length})</button>
       <button type="button" className={showCompleted ? "active" : ""} onClick={() => setShowCompleted(true)}>Concluídos ({records.filter((record) => getProjectProgress(record, tasks).isComplete).length})</button>
     </div>
-    <div className="records-list">{visible.length === 0 ? <div className="empty-state"><strong>Nenhum projeto nesta aba.</strong><p>Crie um projeto acima e depois divida o resultado em pequenas tarefas.</p></div> : visible.map((record) =>
-      <ProjectCard key={record.id} record={record} toggleRecord={toggleRecord} removeRecord={removeRecord} updateRecord={updateRecord} />,
-    )}</div>
+    {visible.length === 0 && <div className="empty-state"><strong>Nenhum projeto nesta aba.</strong><p>Crie um projeto acima e depois divida o resultado em pequenas tarefas.</p></div>}
+    <OrganizedList collection={`records:${area}`} items={visible} label={(record) => record.title} name="projetos" className="records-list">{(record) =>
+      <ProjectCard record={record} toggleRecord={toggleRecord} removeRecord={removeRecord} updateRecord={updateRecord} />
+    }</OrganizedList>
   </section>;
 }
 
@@ -73,6 +77,8 @@ function ProjectCard({ record, toggleRecord, removeRecord, updateRecord }: {
   removeRecord: (id: string) => void;
   updateRecord: (id: string, values: Partial<Omit<HubRecord, "id" | "createdAt">>) => void;
 }) {
+  const [editing, setEditing] = useState(false);
+  const [editingTask, setEditingTask] = useState<Task | null>(null);
   const sites = useSiteStore((state) => state.sites).filter((site) => site.projectIds.includes(record.id));
   const unlinkSiteProject = useSiteStore((state) => state.unlinkProject);
   const [taskTitle, setTaskTitle] = useState("");
@@ -94,11 +100,11 @@ function ProjectCard({ record, toggleRecord, removeRecord, updateRecord }: {
       {sites.length > 0 && <div className="site-project-links"><span>Sites:</span>{sites.map((site) => <Link key={site.id} to={`/sites?site=${site.id}`}>{site.name}</Link>)}</div>}
       <div className="project-progress"><span>{done} de {tasks.length} tarefas concluídas ({progress}%)</span>
         <progress max={100} value={progress} aria-label={`Progresso de ${record.title}`} /></div>
-      <ul className="project-task-list">{tasks.map((task) => <li key={task.id}>
+      <OrganizedList collection={`tasks:project:${record.id}`} items={tasks} label={(task) => task.title} name="tarefas do projeto" className="project-task-list">{(task) => <div className="project-task-row">
         <label><input type="checkbox" checked={task.status === "completed"} onChange={() => toggleTask(task.id)} />
           <span className={task.status === "completed" ? "project-task-done" : ""}>{task.title}</span></label>
-        <ConfirmButton ariaLabel={`Excluir tarefa ${task.title}`} onConfirm={() => removeTask(task.id)} />
-      </li>)}</ul>
+        <button type="button" onClick={() => setEditingTask(task)}>Editar</button><ConfirmButton ariaLabel={`Excluir tarefa ${task.title}`} onConfirm={() => removeTask(task.id)} />
+      </div>}</OrganizedList>
       <form className="project-task-form" onSubmit={(event) => {
         event.preventDefault();
         if (!taskTitle.trim()) return;
@@ -115,15 +121,12 @@ function ProjectCard({ record, toggleRecord, removeRecord, updateRecord }: {
       </form>
     </div>
     <div className="record-actions">
-      <button type="button" onClick={() => {
-        const nextTitle = window.prompt("Nome do projeto", record.title);
-        if (!nextTitle?.trim()) return;
-        const nextDetails = window.prompt("Detalhes", record.details) ?? record.details;
-        updateRecord(record.id, { title: nextTitle.trim(), details: nextDetails.trim() });
-      }}>Editar</button>
+      <button type="button" onClick={() => setEditing(true)}>Editar</button>
       {tasks.length === 0 && <button type="button" onClick={() => toggleRecord(record.id)}>{record.completed ? "Reabrir" : "Concluir"}</button>}
       {tasks.length > 0 && <span className="record-category">{isComplete ? "Concluído" : "Em andamento"}</span>}
       <ConfirmButton label="Excluir projeto" ariaLabel={`Excluir o projeto ${record.title}`} onConfirm={() => { unlinkProject(record.id); unlinkSiteProject(record.id); removeRecord(record.id); }} />
     </div>
+    {editing && <EntityEditor title="Editar projeto" initial={{ title: record.title, category: record.category, details: record.details, dueDate: record.dueDate }} fields={[{ name: "title", label: "Nome do projeto", required: true }, { name: "category", label: "Tipo", type: "select", options: [...new Set([record.category, ...settings[record.area].categories])] }, { name: "dueDate", label: "Prazo", type: "date" }, { name: "details", label: "Detalhes", type: "textarea" }]} onSave={(values) => updateRecord(record.id, { title: values.title, category: values.category, details: values.details, dueDate: values.dueDate || undefined })} onClose={() => setEditing(false)} />}
+    {editingTask && <TaskEditor key={editingTask.id} task={editingTask} onClose={() => setEditingTask(null)} />}
   </article>;
 }

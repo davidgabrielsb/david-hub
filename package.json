@@ -10,7 +10,7 @@
     "tauri": "tauri",
     "build:mac": "./scripts/build-macos.sh",
     "build:windows": "powershell -ExecutionPolicy Bypass -File scripts/build-windows.ps1",
-    "test": "node work/run-tests.mjs",
+    "test": "node work/run-tests.mjs && node work/organization-tests.mjs && node work/ui-smoke-tests.mjs",
     "publicar": "node scripts/publish-changes.mjs"
   },
   "dependencies": {
