@@ -1,0 +1,14 @@
+
+.confirm-actions {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  align-items: center;
+}
+
+button.danger-action,
+.danger-action {
+  color: #fff;
+  background: #b42318;
+  border-color: #b42318;
+}

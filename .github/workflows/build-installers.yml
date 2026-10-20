@@ -1,0 +1,52 @@
+name: Gerar instaladores
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  windows:
+    name: Windows x64
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+      - run: npm ci
+      - run: npm run tauri build -- --bundles nsis
+      - uses: actions/upload-artifact@v4
+        with:
+          name: David-Hub-Windows-x64
+          path: src-tauri/target/release/bundle/nsis/*-setup.exe
+          if-no-files-found: error
+
+  macos-arm:
+    name: macOS Apple Silicon
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+      - run: npm ci
+      - run: npm run tauri build -- --bundles app
+      - run: codesign --force --deep --sign - "src-tauri/target/release/bundle/macos/David Hub.app"
+      - run: ditto -c -k --sequesterRsrc --keepParent "src-tauri/target/release/bundle/macos/David Hub.app" "David-Hub-macOS-arm64.zip"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: David-Hub-macOS-arm64
+          path: David-Hub-macOS-arm64.zip
+          if-no-files-found: error

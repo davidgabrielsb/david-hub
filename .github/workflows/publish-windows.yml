@@ -1,0 +1,83 @@
+name: Publicar atualização Windows
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'public/**'
+      - 'src-tauri/**'
+      - 'scripts/prepare-release.mjs'
+      - 'package*.json'
+      - '*config*'
+      - 'index.html'
+      - '.github/workflows/publish-windows.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: publish-windows
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: windows-latest
+    env:
+      RELEASE_VERSION: 0.2.${{ github.run_number }}
+      TAURI_UPDATER_PUBLIC_KEY: ${{ vars.TAURI_UPDATER_PUBLIC_KEY }}
+      VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+      VITE_SUPABASE_ANON_KEY: ${{ vars.VITE_SUPABASE_ANON_KEY }}
+      VITE_UPDATER_CONFIGURED: 'true'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+      - name: Validar configuração de publicação
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+        shell: pwsh
+        run: |
+          if (-not $env:TAURI_SIGNING_PRIVATE_KEY) { throw 'Configure o secret TAURI_SIGNING_PRIVATE_KEY no GitHub.' }
+          node scripts/prepare-release.mjs
+      - run: npm ci
+      - run: npm test
+      - name: Gerar e assinar instalador
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        run: npm run tauri build -- --bundles nsis --config src-tauri/tauri.updater.conf.json
+      - name: Preparar arquivos da atualização
+        shell: pwsh
+        run: |
+          $installer = Get-ChildItem 'src-tauri/target/release/bundle/nsis/*-setup.exe' | Select-Object -First 1
+          if (-not $installer) { throw 'Instalador não encontrado.' }
+          $signature = Get-Content "$($installer.FullName).sig" -Raw
+          $url = "https://github.com/$env:GITHUB_REPOSITORY/releases/download/v$env:RELEASE_VERSION/$($installer.Name)"
+          $manifest = @{
+            version = $env:RELEASE_VERSION
+            notes = 'Melhorias e correções do David Hub.'
+            pub_date = (Get-Date).ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ssZ')
+            platforms = @{ 'windows-x86_64' = @{ url = $url; signature = $signature.Trim() } }
+          }
+          $manifest | ConvertTo-Json -Depth 5 | Set-Content latest.json -Encoding utf8NoBOM
+      - name: Publicar versão completa
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $tag = "v$env:RELEASE_VERSION"
+          gh release create $tag --target $env:GITHUB_SHA --title "David Hub $env:RELEASE_VERSION" --generate-notes --draft
+          if ($LASTEXITCODE -ne 0) { throw 'Falha ao criar release.' }
+          $files = Get-ChildItem 'src-tauri/target/release/bundle/nsis/*-setup.exe*' | ForEach-Object FullName
+          gh release upload $tag @files latest.json --clobber
+          if ($LASTEXITCODE -ne 0) { throw 'Falha ao enviar arquivos.' }
+          gh release edit $tag --draft=false --latest
+          if ($LASTEXITCODE -ne 0) { throw 'Falha ao publicar release.' }
