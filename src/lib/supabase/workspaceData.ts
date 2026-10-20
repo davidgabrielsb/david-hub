@@ -9,6 +9,7 @@ export const workspaceModules = [
   "routines",
   "events",
   "inbox",
+  "sites",
 ] as const;
 
 export type WorkspaceModule = typeof workspaceModules[number];

@@ -1,3 +1,4 @@
+import { SitesPage } from "../pages/SitesPage";
 import { createBrowserRouter } from "react-router-dom";
 
 import { AppLayout } from "../components/layout/AppLayout";
@@ -36,6 +37,7 @@ export const router = createBrowserRouter([
         path: "/inventory",
         element: <InventoryPage />,
       },
+      { path: "/sites", element: <SitesPage /> },
       { path: "/work", element: <RecordsPage area="work" /> },
       { path: "/study", element: <RecordsPage area="study" /> },
       { path: "/personal", element: <RecordsPage area="personal" /> },

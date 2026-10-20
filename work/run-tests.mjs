@@ -34,3 +34,32 @@ for (const bad of [{repository:'',publicKey:'key',version:'0.2.1'},{repository:'
   try { releaseConfig(bad); } catch { rejected = true; }
   assert(rejected,'publicação rejeita configuração incompleta');
 }
+const { useSiteStore } = await import('../src/stores/useSiteStore.ts');
+const sites = useSiteStore.getState();
+const siteId = sites.addSite({name:'Site Centro',address:'Rua de teste',contact:'Equipe',notes:'Dados gerais',projectIds:['project-a','project-a','project-b']});
+const site = () => useSiteStore.getState().sites.find(site=>site.id===siteId);
+assert(site().projectIds.length===2,'site aceita vários projetos sem duplicar vínculos');
+assert(sites.addSite({name:'  ',address:'',contact:'',notes:'',projectIds:[]})==='', 'rejeita site sem nome');
+const tabId = sites.addInfoTab(siteId,'Dados técnicos');
+sites.updateInfoTab(siteId,tabId,{content:'Tensão 380 V'});
+sites.addList(siteId,'Visita');
+const listId=site().lists[0].id;
+sites.addListItem(siteId,listId,'Conferir quadro');
+const itemId=site().lists[0].items[0].id;
+sites.updateListItem(siteId,listId,itemId,{done:true,text:'Conferir quadro principal'});
+assert(site().lists[0].items[0].done && site().lists[0].items[0].text==='Conferir quadro principal','edita e conclui itens de listas do site');
+sites.addMaterial(siteId,{name:'Cabo',quantity:12.5,unit:'m',status:'pending',notes:'Flexível'});
+sites.addMaterial(siteId,{name:'Inválido',quantity:NaN,unit:'m',status:'pending',notes:''});
+sites.addMaterial(siteId,{name:'Inválido',quantity:-1,unit:'m',status:'pending',notes:''});
+assert(site().materials.length===1,'materiais aceitam quantidade fracionada e rejeitam valores inválidos');
+const material=site().materials[0];
+sites.updateMaterial(siteId,material.id,{...material,status:'received'});
+assert(site().materials[0].status==='received','registra recebimento de material');
+await useSiteStore.persist.rehydrate();
+assert(site().infoTabs[0].content==='Tensão 380 V' && site().lists[0].items[0].done && site().materials[0].quantity===12.5,'sites restauram informações, listas e materiais salvos');
+sites.unlinkProject('project-a');
+assert(site().projectIds.join()==='project-b' && site().infoTabs.length===1,'remover vínculo de projeto preserva dados do site');
+sites.removeListItem(siteId,listId,itemId); sites.removeMaterial(siteId,material.id); sites.removeInfoTab(siteId,tabId);
+assert(!site().lists[0].items.length && !site().materials.length && !site().infoTabs.length,'exclui conteúdo do site sem afetar o cadastro');
+sites.removeList(siteId,listId); sites.removeSite(siteId);
+assert(!site(),'exclui site');

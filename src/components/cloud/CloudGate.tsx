@@ -1,3 +1,4 @@
+import { useCloudStatusStore } from "../../stores/useCloudStatusStore";
 import { useEffect, useState, type ReactNode } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { isCloudConfigured, supabase } from "../../lib/supabase/client";
@@ -26,6 +27,7 @@ export function CloudGate({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!supabase || !session) return;
+    useCloudStatusStore.getState().setSitesReady(null);
     let disposed = false;
     let applyingRemote = false;
     let channel: ReturnType<typeof subscribeToWorkspace> | undefined;
@@ -49,28 +51,40 @@ export function CloudGate({ children }: { children: ReactNode }) {
         const activeWorkspaceId = workspaceId;
 
         for (const item of storeAdapters) {
-          const remote = await loadWorkspaceDocument<Record<string, unknown>>(activeWorkspaceId, item.module);
-          if (remote) {
-            applyingRemote = true; item.apply(remote.payload); applyingRemote = false;
-            versions.set(item.module, remote.version);
-          } else {
-            const version = Date.now();
-            await saveWorkspaceDocument(activeWorkspaceId, item.module, item.read(), version);
-            versions.set(item.module, version);
+          if (disposed) return;
+          try {
+            const remote = await loadWorkspaceDocument<Record<string, unknown>>(activeWorkspaceId, item.module);
+            if (remote) {
+              applyingRemote = true; item.apply(remote.payload); applyingRemote = false;
+              versions.set(item.module, remote.version);
+            } else {
+              const version = Date.now();
+              await saveWorkspaceDocument(activeWorkspaceId, item.module, item.read(), version);
+              versions.set(item.module, version);
+            }
+            if (item.module === "sites") useCloudStatusStore.getState().setSitesReady(true);
+            unsubscribers.push(item.subscribe(() => {
+              if (applyingRemote || disposed) return;
+              setSyncState("preparing");
+              const previous = timers.get(item.module);
+              if (previous) window.clearTimeout(previous);
+              timers.set(item.module, window.setTimeout(async () => {
+                try {
+                  const version = Date.now();
+                  await saveWorkspaceDocument(activeWorkspaceId, item.module, item.read(), version);
+                  versions.set(item.module, version); setSyncState("online");
+                } catch { setSyncState("offline"); }
+              }, 500));
+            }));
+          } catch (error) {
+            // Older databases do not accept the sites module until its migration is applied.
+            // Keep the other modules connected and retain all sites locally.
+            if (item.module === "sites" && (error as { code?: string }).code === "23514") {
+              useCloudStatusStore.getState().setSitesReady(false);
+              continue;
+            }
+            throw error;
           }
-          unsubscribers.push(item.subscribe(() => {
-            if (applyingRemote || disposed) return;
-            setSyncState("preparing");
-            const previous = timers.get(item.module);
-            if (previous) window.clearTimeout(previous);
-            timers.set(item.module, window.setTimeout(async () => {
-              try {
-                const version = Date.now();
-                await saveWorkspaceDocument(activeWorkspaceId, item.module, item.read(), version);
-                versions.set(item.module, version); setSyncState("online");
-              } catch { setSyncState("offline"); }
-            }, 500));
-          }));
         }
 
         channel = subscribeToWorkspace(activeWorkspaceId, (document) => {

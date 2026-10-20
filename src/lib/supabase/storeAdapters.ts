@@ -1,3 +1,4 @@
+import { useSiteStore } from "../../stores/useSiteStore";
 import type { WorkspaceModule } from "./workspaceData";
 import { useTaskStore } from "../../stores/useTaskStore";
 import { useRecordStore } from "../../stores/useRecordStore";
@@ -41,4 +42,5 @@ export const storeAdapters: StoreAdapter[] = [
   adapter("routines", asStore(useRoutineStore), ["routines"]),
   adapter("events", asStore(useEventStore), ["events"]),
   adapter("inbox", asStore(useInboxStore), ["items"]),
+  adapter("sites", asStore(useSiteStore), ["sites"]),
 ];

@@ -1,3 +1,5 @@
+import { Link } from "react-router-dom";
+import { useSiteStore } from "../stores/useSiteStore";
 import { useState } from "react";
 import { useRecordStore, type HubRecord, type RecordArea } from "../stores/useRecordStore";
 import { useTaskStore, type TaskPriority } from "../stores/useTaskStore";
@@ -71,6 +73,8 @@ function ProjectCard({ record, toggleRecord, removeRecord, updateRecord }: {
   removeRecord: (id: string) => void;
   updateRecord: (id: string, values: Partial<Omit<HubRecord, "id" | "createdAt">>) => void;
 }) {
+  const sites = useSiteStore((state) => state.sites).filter((site) => site.projectIds.includes(record.id));
+  const unlinkSiteProject = useSiteStore((state) => state.unlinkProject);
   const [taskTitle, setTaskTitle] = useState("");
   const [taskDeadline, setTaskDeadline] = useState("");
   const [taskPriority, setTaskPriority] = useState<TaskPriority>("normal");
@@ -87,6 +91,7 @@ function ProjectCard({ record, toggleRecord, removeRecord, updateRecord }: {
       <h3>{record.title}</h3>
       {record.details && <p>{record.details}</p>}
       {record.dueDate && <small>Prazo: {record.dueDate.split("-").reverse().join("/")}</small>}
+      {sites.length > 0 && <div className="site-project-links"><span>Sites:</span>{sites.map((site) => <Link key={site.id} to={`/sites?site=${site.id}`}>{site.name}</Link>)}</div>}
       <div className="project-progress"><span>{done} de {tasks.length} tarefas concluídas ({progress}%)</span>
         <progress max={100} value={progress} aria-label={`Progresso de ${record.title}`} /></div>
       <ul className="project-task-list">{tasks.map((task) => <li key={task.id}>
@@ -118,7 +123,7 @@ function ProjectCard({ record, toggleRecord, removeRecord, updateRecord }: {
       }}>Editar</button>
       {tasks.length === 0 && <button type="button" onClick={() => toggleRecord(record.id)}>{record.completed ? "Reabrir" : "Concluir"}</button>}
       {tasks.length > 0 && <span className="record-category">{isComplete ? "Concluído" : "Em andamento"}</span>}
-      <ConfirmButton label="Excluir projeto" ariaLabel={`Excluir o projeto ${record.title}`} onConfirm={() => { unlinkProject(record.id); removeRecord(record.id); }} />
+      <ConfirmButton label="Excluir projeto" ariaLabel={`Excluir o projeto ${record.title}`} onConfirm={() => { unlinkProject(record.id); unlinkSiteProject(record.id); removeRecord(record.id); }} />
     </div>
   </article>;
 }
