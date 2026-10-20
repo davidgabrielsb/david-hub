@@ -2,7 +2,7 @@
 
 ## O que está preparado
 
-A pasta já tem um repositório Git local, ainda sem destino no GitHub. O fluxo `.github/workflows/publish-windows.yml` publica uma versão Windows quando mudanças do aplicativo chegam à branch `main`, ou quando executado manualmente em Actions. Salvar um arquivo no Mac não publica nada: a mudança precisa ser enviada ao GitHub.
+A pasta está conectada ao repositório público `davidgabrielsb/david-hub` no GitHub. O fluxo `.github/workflows/publish-windows.yml` publica uma versão Windows quando mudanças do aplicativo chegam à branch `main`, ou quando executado manualmente em Actions. Salvar um arquivo no Mac não publica nada: a mudança precisa ser enviada ao GitHub.
 
 Cada execução recebe uma versão crescente `0.2.N`, executa os testes e gera um instalador NSIS assinado. A release só fica disponível depois do envio do instalador, da assinatura e do manifesto `latest.json`. O Windows consulta um endereço fixo para localizar a versão mais recente.
 
@@ -27,6 +27,6 @@ As chaves foram geradas localmente em `.release-keys/`, com acesso restrito, e e
 
 ## Trabalho diário
 
-Depois da ativação, basta enviar as mudanças aprovadas à branch `main`. O GitHub gera e publica o instalador; no Windows, abra **Dados e backup** e clique em **Atualizar e reiniciar** quando houver uma nova versão. O Mac não precisa estar ligado durante a geração.
+Depois da ativação, execute `npm run publicar` para validar, salvar e enviar as mudanças aprovadas à branch `main`. O comando não inclui dados locais, chaves ou documentos pessoais. O GitHub gera e publica o instalador; no Windows, abra **Dados e backup** e clique em **Atualizar e reiniciar** quando houver uma nova versão. O Mac não precisa estar ligado durante a geração.
 
 A automação não foi executada no GitHub e a instalação de uma atualização real no Windows ainda precisa ser validada após conectar o repositório.

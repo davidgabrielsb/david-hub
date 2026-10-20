@@ -10,7 +10,8 @@
     "tauri": "tauri",
     "build:mac": "./scripts/build-macos.sh",
     "build:windows": "powershell -ExecutionPolicy Bypass -File scripts/build-windows.ps1",
-    "test": "node work/run-tests.mjs"
+    "test": "node work/run-tests.mjs",
+    "publicar": "node scripts/publish-changes.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.116.0",
