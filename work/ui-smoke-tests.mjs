@@ -45,6 +45,36 @@ try {
   useTaskStore.getState().toggleTask('task');
   assert(renderDashboard().includes('Tarefa de teste'), 'reopened task returns to Meu dia');
   console.log('PASS complete Meu dia task, retain completed record and progress, reopen task');
+  const { CalendarPage } = await server.ssrLoadModule('/src/pages/CalendarPage.tsx');
+  const { useEventStore } = await server.ssrLoadModule('/src/stores/useEventStore.ts');
+  const { useFinanceStore } = await server.ssrLoadModule('/src/stores/useFinanceStore.ts');
+  const { useInventoryStore } = await server.ssrLoadModule('/src/stores/useInventoryStore.ts');
+  const { localDate } = await server.ssrLoadModule('/src/utils/calendar.ts');
+  const today = localDate();
+  for (const area of ['work', 'study', 'personal']) {
+    useTaskStore.getState().addTask({ id: `filter-${area}`, title: `Tarefa-filtro-${area}`, area, priority: 'high', status: 'todo', deadline: today, plannedToday: true, createdAt: today });
+    useEventStore.getState().addEvent({ id: `event-${area}`, title: `Evento-filtro-${area}`, area, date: today });
+  }
+  useFinanceStore.getState().addBill({ id: 'filter-bill', title: 'Conta-pessoal-filtro', amount: 10, dueDate: today, paid: false });
+  useInventoryStore.getState().addItem({ id: 'filter-stock', product: 'Estoque-trabalho-filtro', brand: 'Teste', quantity: 0, minimumStock: 1 });
+  const beforeFilter = JSON.stringify(useTaskStore.getState().tasks);
+  for (const selected of ['all', 'work', 'study', 'personal']) {
+    const renderFiltered = (Page) => renderToStaticMarkup(React.createElement(MemoryRouter, { initialEntries: [selected === 'all' ? '/' : `/?area=${selected}`] }, React.createElement(Page)));
+    const dashboard = renderFiltered(DashboardPage);
+    const calendar = renderFiltered(CalendarPage);
+    assert(dashboard.includes('Filtrar por área da vida') && calendar.includes('Filtrar por área da vida'));
+    for (const area of ['work', 'study', 'personal']) {
+      const expected = selected === 'all' || selected === area;
+      assert.equal(dashboard.includes(`Tarefa-filtro-${area}`), expected, `Dashboard ${selected}: ${area}`);
+      assert.equal(calendar.includes(`Tarefa-filtro-${area}`), expected, `Calendar tasks ${selected}: ${area}`);
+      assert.equal(calendar.includes(`Evento-filtro-${area}`), expected, `Calendar events ${selected}: ${area}`);
+    }
+    assert.equal(dashboard.includes('Estoque-trabalho-filtro'), selected === 'all' || selected === 'work');
+    assert.equal(dashboard.includes('Conta-pessoal-filtro'), selected === 'all' || selected === 'personal');
+    assert.equal(calendar.includes('Conta-pessoal-filtro'), selected === 'all' || selected === 'personal');
+  }
+  assert.equal(JSON.stringify(useTaskStore.getState().tasks), beforeFilter, 'area filtering never changes task data');
+  console.log('PASS all life-area filters on Dashboard and Calendar, task/event visibility, work stock, personal bills, no data mutation');
   const { EntityEditor } = await server.ssrLoadModule('/src/components/EntityEditor.tsx');
   const editor = renderToStaticMarkup(React.createElement(EntityEditor, { title: 'Editar projeto', initial: { title: 'Nome', details: 'Linha 1\nLinha 2', dueDate: '2026-10-21' }, fields: [{ name: 'title', label: 'Nome', required: true }, { name: 'details', label: 'Detalhes', type: 'textarea' }, { name: 'dueDate', label: 'Prazo', type: 'date' }], onSave() {}, onClose() {} }));
   assert(editor.includes('role=') || editor.includes('<dialog'));

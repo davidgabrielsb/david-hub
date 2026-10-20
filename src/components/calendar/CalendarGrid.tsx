@@ -5,6 +5,7 @@ import { useEventStore } from "../../stores/useEventStore";
 import { useRecordStore } from "../../stores/useRecordStore";
 import { getProjectProgress } from "../../features/projects/progress";
 import { useFinanceStore } from "../../stores/useFinanceStore";
+import { matchesArea, type AreaSelection } from "../AreaFilter";
 
 const weekDays = [
   "dom.",
@@ -19,11 +20,13 @@ const weekDays = [
 interface CalendarGridProps {
   year: number;
   month: number;
+  area?: AreaSelection;
 }
 
 export function CalendarGrid({
   year,
   month,
+  area = "all",
 }: CalendarGridProps) {
   const days = createCalendarMonth(year, month);
 
@@ -50,11 +53,11 @@ export function CalendarGrid({
           const dateKey = formatDateKey(day.date);
 
           const dayTasks = tasks.filter(
-            (task) => task.deadline === dateKey,
+            (task) => matchesArea(task.area, area) && task.deadline === dateKey,
           );
-          const dayEvents = events.filter((event) => event.date === dateKey);
-          const dayRecords = records.filter((record) => !getProjectProgress(record, tasks).isComplete && record.dueDate === dateKey);
-          const dayBills = bills.filter((bill) => !bill.paid && bill.dueDate === dateKey);
+          const dayEvents = events.filter((event) => matchesArea(event.area, area) && event.date === dateKey);
+          const dayRecords = records.filter((record) => matchesArea(record.area, area) && !getProjectProgress(record, tasks).isComplete && record.dueDate === dateKey);
+          const dayBills = bills.filter((bill) => matchesArea("personal", area) && !bill.paid && bill.dueDate === dateKey);
 
           return (
             <div

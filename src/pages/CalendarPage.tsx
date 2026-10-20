@@ -6,6 +6,7 @@ import { useEventStore, type CalendarEvent } from "../stores/useEventStore";
 import { PageSearch } from "../components/PageSearch";
 import { EntityEditor } from "../components/EntityEditor";
 import { OrganizedList } from "../components/ListOrganization";
+import { AreaFilter, matchesArea, useAreaFilter } from "../components/AreaFilter";
 
 const monthFormatter = new Intl.DateTimeFormat(
   "pt-BR",
@@ -16,6 +17,7 @@ const monthFormatter = new Intl.DateTimeFormat(
 );
 
 export function CalendarPage() {
+  const { selected, select } = useAreaFilter();
   const [editing, setEditing] = useState<CalendarEvent | null>(null);
   const events = useEventStore((state) => state.events);
   const addEvent = useEventStore((state) => state.addEvent);
@@ -24,7 +26,7 @@ export function CalendarPage() {
   const [title, setTitle] = useState("");
   const [date, setDate] = useState("");
   const [time, setTime] = useState("");
-  const [area, setArea] = useState<CalendarEvent["area"]>("personal");
+  const [area, setArea] = useState<CalendarEvent["area"]>(selected === "all" ? "personal" : selected);
   const [search, setSearch] = useState("");
   const today = new Date();
 
@@ -68,7 +70,7 @@ export function CalendarPage() {
     );
   }
 
-  const visibleEvents = events.filter((event) => `${event.title} ${event.area} ${event.date}`.toLocaleLowerCase("pt-BR").includes(search.trim().toLocaleLowerCase("pt-BR")));
+  const visibleEvents = events.filter((event) => matchesArea(event.area, selected) && `${event.title} ${event.area} ${event.date}`.toLocaleLowerCase("pt-BR").includes(search.trim().toLocaleLowerCase("pt-BR")));
 
   return (
     <section>
@@ -101,10 +103,12 @@ export function CalendarPage() {
         </h2>
         <PageSearch value={search} onChange={setSearch} placeholder="Buscar compromisso..." />
       </header>
+      <AreaFilter value={selected} onChange={(next) => { select(next); if (next !== "all") setArea(next); }} />
 
       <CalendarGrid
         year={currentDate.getFullYear()}
         month={currentDate.getMonth()}
+        area={selected}
       />
       <div className="calendar-entry">
         <h3>Datas importantes</h3>

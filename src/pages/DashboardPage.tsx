@@ -6,23 +6,26 @@ import { useInventoryStore } from "../stores/useInventoryStore";
 import { useRecordStore } from "../stores/useRecordStore";
 import { getProjectProgress } from "../features/projects/progress";
 import { useFinanceStore } from "../stores/useFinanceStore";
+import { AreaFilter, matchesArea, useAreaFilter } from "../components/AreaFilter";
 
 export function DashboardPage() {
-  const tasks = useTaskStore((state) => state.tasks);
+  const { selected, select } = useAreaFilter();
+  const allTasks = useTaskStore((state) => state.tasks);
+  const tasks = allTasks.filter((task) => matchesArea(task.area, selected));
   const toggleTask = useTaskStore((state) => state.toggleTask);
   const togglePlannedToday = useTaskStore((state) => state.togglePlannedToday);
   const inventory = useInventoryStore((state) => state.inventory);
   const records = useRecordStore((state) => state.records);
   const bills = useFinanceStore((state) => state.bills);
   const stockAlerts = inventory.filter((item) =>
-    item.minimumStock !== undefined && item.quantity <= item.minimumStock,
+    matchesArea("work", selected) && item.minimumStock !== undefined && item.quantity <= item.minimumStock,
   );
 
   const today = formatDateKey(new Date());
   const dueRecords = records.filter((record) =>
-    !getProjectProgress(record, tasks).isComplete && record.dueDate && record.dueDate <= today,
+    matchesArea(record.area, selected) && !getProjectProgress(record, allTasks).isComplete && record.dueDate && record.dueDate <= today,
   );
-  const dueBills = bills.filter((bill) => !bill.paid && bill.dueDate <= addDays(today, 7));
+  const dueBills = bills.filter((bill) => matchesArea("personal", selected) && !bill.paid && bill.dueDate <= addDays(today, 7));
 
   const openTasks = tasks.filter(
     (task) => task.status !== "completed",
@@ -93,6 +96,7 @@ export function DashboardPage() {
           {formatFullDate(new Date())}
         </div>
       </header>
+      <AreaFilter value={selected} onChange={select} />
 
       <div className="dashboard-summary">
         <SummaryCard
@@ -209,20 +213,20 @@ export function DashboardPage() {
       {todayTasks.length > 5 && <p className="day-guidance">Seu Meu dia tem mais de cinco tarefas abertas. Escolha as cinco mais importantes para manter o foco.</p>}
 
       <div className="dashboard-area-summary">
-        <AreaCard
+        {matchesArea("work", selected) && <AreaCard
           label="Trabalho"
           value={workTasks.length}
-        />
+        />}
 
-        <AreaCard
+        {matchesArea("study", selected) && <AreaCard
           label="Estudos"
           value={studyTasks.length}
-        />
+        />}
 
-        <AreaCard
+        {matchesArea("personal", selected) && <AreaCard
           label="Pessoal"
           value={personalTasks.length}
-        />
+        />}
       </div>
     </section>
   );
