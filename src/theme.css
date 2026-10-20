@@ -109,7 +109,7 @@ button:disabled { opacity: .5; cursor: not-allowed; }
 .settings-card > div:not(.theme-options) { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
 .settings-card button { padding: 10px 16px; border: 1px solid var(--border); border-radius: 9px; background: var(--surface-soft); color: var(--text); cursor: pointer; }
 .settings-eyebrow { display: block; color: var(--blue); font-size: 10px; font-weight: 800; letter-spacing: .15em; margin-bottom: 8px; }
-.theme-options { display: grid; grid-template-columns: repeat(2, minmax(0, 240px)); gap: 16px; margin-top: 22px; }
+.settings-card .theme-options { display: grid; grid-template-columns: repeat(2, minmax(0, 240px)); gap: 16px; margin-top: 22px; }
 .settings-card .theme-option { display: grid; gap: 6px; padding: 12px; text-align: left; background: var(--surface); border: 2px solid var(--border); }
 .settings-card .theme-option.selected { border-color: var(--blue); background: var(--blue-soft); }
 .theme-option small { color: var(--muted); font-size: 12px; }
@@ -125,5 +125,5 @@ button:disabled { opacity: .5; cursor: not-allowed; }
 .auth-tabs { background: var(--surface-soft); }.auth-tabs button { color: var(--text); padding: 10px; border-radius: 8px; }.auth-tabs button.active { background: var(--surface); }
 .auth-submit { min-height: 44px; border: 0; border-radius: 8px; background: #245de0; color: #fff; cursor: pointer; }
 .auth-message { background: var(--blue-soft); color: var(--blue); }
-@media (max-width: 800px) { .sidebar { position: static; height: auto; }.sidebar-nav { gap: 14px; }.sidebar-group { margin-bottom: 0; }.theme-options { grid-template-columns: 1fr 1fr; }.page-header { flex-wrap: wrap; gap: 14px; } }
-@media (max-width: 420px) { .theme-options { grid-template-columns: 1fr; } }
+@media (max-width: 800px) { .sidebar { position: static; height: auto; }.sidebar-nav { gap: 14px; }.sidebar-group { margin-bottom: 0; }.settings-card .theme-options { grid-template-columns: 1fr 1fr; }.page-header { flex-wrap: wrap; gap: 14px; } }
+@media (max-width: 420px) { .settings-card .theme-options { grid-template-columns: 1fr; } }
