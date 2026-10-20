@@ -59,8 +59,12 @@ jobs:
         run: |
           $installer = Get-ChildItem 'src-tauri/target/release/bundle/nsis/*-setup.exe' | Select-Object -First 1
           if (-not $installer) { throw 'Instalador não encontrado.' }
-          $signature = Get-Content "$($installer.FullName).sig" -Raw
-          $url = "https://github.com/$env:GITHUB_REPOSITORY/releases/download/v$env:RELEASE_VERSION/$($installer.Name)"
+          $signaturePath = "$($installer.FullName).sig"
+          $assetName = "David-Hub_$($env:RELEASE_VERSION)_x64-setup.exe"
+          Rename-Item $installer.FullName -NewName $assetName
+          Rename-Item $signaturePath -NewName "$assetName.sig"
+          $signature = Get-Content (Join-Path $installer.DirectoryName "$assetName.sig") -Raw
+          $url = "https://github.com/$env:GITHUB_REPOSITORY/releases/download/v$env:RELEASE_VERSION/$assetName"
           $manifest = @{
             version = $env:RELEASE_VERSION
             notes = 'Melhorias e correções do David Hub.'

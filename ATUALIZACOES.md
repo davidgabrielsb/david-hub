@@ -29,4 +29,4 @@ As chaves foram geradas localmente em `.release-keys/`, com acesso restrito, e e
 
 Depois da ativação, execute `npm run publicar` para validar, salvar e enviar as mudanças aprovadas à branch `main`. O comando não inclui dados locais, chaves ou documentos pessoais. O GitHub gera e publica o instalador; no Windows, abra **Dados e backup** e clique em **Atualizar e reiniciar** quando houver uma nova versão. O Mac não precisa estar ligado durante a geração.
 
-A automação não foi executada no GitHub e a instalação de uma atualização real no Windows ainda precisa ser validada após conectar o repositório.
+A automação já foi executada no GitHub e gerou o instalador Windows assinado. Os testes também passaram no ambiente Windows. A instalação e a atualização dentro do Windows do usuário ainda precisam ser validadas nesse computador.
