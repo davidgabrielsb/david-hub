@@ -12,7 +12,7 @@ globalThis.document = { documentElement: { dataset: {}, style: {} } };
 put('david-hub-inbox', { items: [{ id: 'z', text: 'Zulu', createdAt: '2026-10-20' }, { id: 'a', text: 'Árvore', createdAt: '2026-10-20' }] });
 put('david-hub-organization', { lists: { 'inbox:items': { mode: 'az', ids: [] } } });
 put('david-hub-records', { records: [{ id: 'project', title: 'Projeto de teste', area: 'work', category: 'Obra', details: 'Duas linhas\nPreservadas', completed: false, createdAt: '2026-10-20' }] });
-put('david-hub-tasks', { tasks: [{ id: 'task', title: 'Tarefa de teste', projectId: 'project', area: 'work', priority: 'normal', status: 'todo', createdAt: '2026-10-20' }] });
+put('david-hub-tasks', { tasks: [{ id: 'task', title: 'Tarefa de teste', projectId: 'project', area: 'work', priority: 'normal', status: 'todo', plannedToday: true, createdAt: '2026-10-20' }] });
 
 const server = await createServer({ server: { middlewareMode: true }, appType: 'custom', logLevel: 'error', envFile: false,
   define: { 'import.meta.env.VITE_SUPABASE_URL': '""', 'import.meta.env.VITE_SUPABASE_ANON_KEY': '""' },
@@ -33,6 +33,18 @@ try {
     if (name === 'Records') assert(markup.includes('tarefas do projeto') && markup.includes('Projeto de teste'));
     console.log(`PASS render ${name}`);
   }
+  const { DashboardPage } = await server.ssrLoadModule('/src/pages/DashboardPage.tsx');
+  const { useTaskStore } = await server.ssrLoadModule('/src/stores/useTaskStore.ts');
+  const renderDashboard = () => renderToStaticMarkup(React.createElement(MemoryRouter, {}, React.createElement(DashboardPage)));
+  assert(renderDashboard().includes('Tarefa de teste'), 'open planned task appears in Meu dia');
+  useTaskStore.getState().toggleTask('task');
+  const completedDashboard = renderDashboard();
+  assert(!completedDashboard.includes('Tarefa de teste') && completedDashboard.includes('Nenhuma tarefa para hoje.'), 'completed task leaves Meu dia immediately');
+  assert.equal(useTaskStore.getState().tasks.find((task) => task.id === 'task').status, 'completed', 'task is retained in Concluídas');
+  assert(completedDashboard.includes('Meu dia • 1/1'), 'daily progress is preserved');
+  useTaskStore.getState().toggleTask('task');
+  assert(renderDashboard().includes('Tarefa de teste'), 'reopened task returns to Meu dia');
+  console.log('PASS complete Meu dia task, retain completed record and progress, reopen task');
   const { EntityEditor } = await server.ssrLoadModule('/src/components/EntityEditor.tsx');
   const editor = renderToStaticMarkup(React.createElement(EntityEditor, { title: 'Editar projeto', initial: { title: 'Nome', details: 'Linha 1\nLinha 2', dueDate: '2026-10-21' }, fields: [{ name: 'title', label: 'Nome', required: true }, { name: 'details', label: 'Detalhes', type: 'textarea' }, { name: 'dueDate', label: 'Prazo', type: 'date' }], onSave() {}, onClose() {} }));
   assert(editor.includes('role=') || editor.includes('<dialog'));

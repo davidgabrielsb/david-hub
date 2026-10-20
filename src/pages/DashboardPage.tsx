@@ -122,7 +122,7 @@ export function DashboardPage() {
           title={`Meu dia • ${myDayTasks.filter((task) => task.status === "completed").length}/${myDayTasks.length}`}
           emptyText="Nenhuma tarefa para hoje."
         >
-          {myDayTasks.map((task) => (
+          {todayTasks.map((task) => (
             <TaskRow
               key={task.id}
               task={task}
@@ -206,7 +206,7 @@ export function DashboardPage() {
           ))}
         </DashboardCard>
       </div>
-      {myDayTasks.filter((task) => task.status !== "completed").length > 5 && <p className="day-guidance">Seu Meu dia tem mais de cinco tarefas abertas. Escolha as cinco mais importantes para manter o foco.</p>}
+      {todayTasks.length > 5 && <p className="day-guidance">Seu Meu dia tem mais de cinco tarefas abertas. Escolha as cinco mais importantes para manter o foco.</p>}
 
       <div className="dashboard-area-summary">
         <AreaCard
