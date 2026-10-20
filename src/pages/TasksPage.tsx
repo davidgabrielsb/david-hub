@@ -409,6 +409,8 @@ const filteredTasks = tasks
         {filteredTasks.map((task) => (
           <article
             key={task.id}
+            data-priority={task.priority}
+            data-area={task.area}
             className={
               task.status === "completed"
                 ? "task-card completed"
@@ -455,7 +457,7 @@ const filteredTasks = tasks
                     )}
                   </select>
 
-                  <span>
+                  <span className="priority-badge">
                     {getPriorityLabel(
                       task.priority,
                     )}

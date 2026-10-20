@@ -1,8 +1,10 @@
 import { AppUpdates } from "../components/cloud/AppUpdates";
+import { useThemeStore } from "../stores/useThemeStore";
 import { useEffect, useRef, useState } from "react";
 import { isCloudConfigured, supabase } from "../lib/supabase/client";
 const storageKeys = ["david-hub-tasks", "david-hub-inventory", "david-hub-records", "david-hub-events", "david-hub-inbox", "david-hub-habits", "david-hub-bills", "david-hub-routines", "david-hub-sites"];
 export function SettingsPage() {
+  const { theme, setTheme } = useThemeStore();
   const inputRef = useRef<HTMLInputElement>(null); const [message, setMessage] = useState(""); const [userEmail, setUserEmail] = useState("");
   useEffect(() => { if (supabase) void supabase.auth.getUser().then(({ data }) => setUserEmail(data.user?.email ?? "")); }, []);
   function exportData() {
@@ -18,7 +20,13 @@ export function SettingsPage() {
       window.location.reload();
     } catch { setMessage("Não foi possível ler esse backup."); }
   }
-  return <section><header className="page-header"><div><h2>Dados e backup</h2><p>Proteja seus dados locais e leve uma cópia para outro computador.</p></div></header>
+  return <section><header className="page-header"><div><h2>Configurações</h2><p>Deixe o Hub do seu jeito e proteja seus dados.</p></div></header>
+    <div className="settings-card appearance-card"><span className="settings-eyebrow">DO SEU JEITO</span><h3>Aparência</h3><p>Escolha um visual para o seu dia. Sua preferência fica salva neste computador.</p>
+      <div className="theme-options" role="group" aria-label="Tema do aplicativo">
+        <button type="button" className={`theme-option ${theme === "light" ? "selected" : ""}`} aria-pressed={theme === "light"} onClick={() => setTheme("light")}><span className="theme-preview preview-light" aria-hidden="true"><i /><i /><i /></span><strong>Modo claro</strong><small>Fundo branco e destaques coloridos</small></button>
+        <button type="button" className={`theme-option ${theme === "dark" ? "selected" : ""}`} aria-pressed={theme === "dark"} onClick={() => setTheme("dark")}><span className="theme-preview preview-dark" aria-hidden="true"><i /><i /><i /></span><strong>Modo escuro</strong><small>Tons suaves para ambientes escuros</small></button>
+      </div>
+    </div>
     <AppUpdates />
     <div className="settings-card"><h3>Backup completo</h3><p>O arquivo inclui tarefas, projetos, calendário, estoque, hábitos, contas, sites e caixa de entrada.</p><div><button onClick={exportData}>Baixar backup</button><button onClick={() => inputRef.current?.click()}>Restaurar backup</button><input ref={inputRef} hidden type="file" accept="application/json" onChange={(event) => void importData(event.target.files?.[0])} /></div>{message && <small>{message}</small>}</div>
     <div className="settings-card"><h3>Sincronização</h3>{isCloudConfigured ? <><p><strong>Nuvem conectada.</strong> Tarefas, projetos, calendário, estoque, hábitos, finanças, rotinas, sites e caixa de entrada são sincronizados automaticamente.</p>{userEmail && <small>Conta: {userEmail}</small>}<div><button onClick={() => void supabase?.auth.signOut()}>Sair desta conta</button></div></> : <p>Modo local ativo. Configure as chaves públicas do Supabase para ativar login e sincronização entre Windows e macOS.</p>}</div>

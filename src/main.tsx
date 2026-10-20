@@ -7,6 +7,8 @@ import { router } from "./app/router";
 import { CloudGate } from "./components/cloud/CloudGate";
 
 import "./App.css";
+import "./theme.css";
+import "./stores/useThemeStore";
 
 ReactDOM.createRoot(
   document.getElementById("root") as HTMLElement,

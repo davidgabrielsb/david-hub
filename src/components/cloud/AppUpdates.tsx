@@ -58,7 +58,7 @@ export function AppUpdates() {
   }
 
   return <div className="settings-card"><h3>Atualizações do Hub{version ? ` • ${version}` : ""}</h3>
-    <p>{enabled ? "Confira e instale novas versões sem baixar a pasta do projeto. O Hub será fechado durante a instalação." : "As atualizações ficam disponíveis no aplicativo Windows distribuído pelo canal de versões."}</p>
+    <p>{enabled ? "Confira e instale novas versões sem baixar a pasta do projeto. O Hub será fechado durante a instalação." : <>Baixe a versão mais recente para o seu computador em <a href="https://github.com/davidgabrielsb/david-hub/releases/latest" target="_blank" rel="noreferrer">Versões do David Hub</a>. No Mac, use o pacote macOS compatível com seu processador.</>}</p>
     {enabled && <div><button disabled={busy} onClick={() => void checkUpdate()}>Verificar atualizações</button>{update && <button disabled={busy} onClick={() => void install()}>Atualizar e reiniciar</button>}</div>}
     {message && <p role="status">{message}</p>}{update?.body && <p style={{ whiteSpace: "pre-wrap" }}>{update.body}</p>}
   </div>;

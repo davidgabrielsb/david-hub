@@ -1,4 +1,4 @@
-name: Publicar atualização Windows
+name: Publicar atualização Windows e macOS
 
 on:
   push:
@@ -85,3 +85,41 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Falha ao enviar arquivos.' }
           gh release edit $tag --draft=false --latest
           if ($LASTEXITCODE -ne 0) { throw 'Falha ao publicar release.' }
+
+  macos:
+    name: Publicar macOS Apple Silicon
+    runs-on: macos-latest
+    needs: publish
+    env:
+      RELEASE_VERSION: 0.2.${{ github.run_number }}
+      VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+      VITE_SUPABASE_ANON_KEY: ${{ vars.VITE_SUPABASE_ANON_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+      - run: npm ci
+      - run: npm test
+      - name: Definir versão do aplicativo
+        run: |
+          node --input-type=module -e 'import fs from "node:fs"; for (const path of ["package.json", "src-tauri/tauri.conf.json"]) { const data = JSON.parse(fs.readFileSync(path, "utf8")); data.version = process.env.RELEASE_VERSION; fs.writeFileSync(path, JSON.stringify(data, null, 2) + "\n"); } const path = "src-tauri/Cargo.toml"; fs.writeFileSync(path, fs.readFileSync(path, "utf8").replace(/version = "[^"]+"/, `version = "${process.env.RELEASE_VERSION}"`));'
+      - run: npm run tauri build -- --bundles app
+      - name: Assinar localmente e empacotar
+        run: |
+          codesign --force --deep --sign - "src-tauri/target/release/bundle/macos/David Hub.app"
+          ditto -c -k --sequesterRsrc --keepParent "src-tauri/target/release/bundle/macos/David Hub.app" "David-Hub-macOS-arm64.zip"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: David-Hub-macOS-arm64
+          path: David-Hub-macOS-arm64.zip
+          if-no-files-found: error
+      - name: Adicionar pacote Mac à versão publicada
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "v$RELEASE_VERSION" David-Hub-macOS-arm64.zip --clobber --repo "$GITHUB_REPOSITORY"
